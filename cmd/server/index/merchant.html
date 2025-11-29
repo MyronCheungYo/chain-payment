@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Merchant - Generate Intent</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="qr.min.js"></script>
+</head>
+<body>
+
+<h2>商户后台</h2>
+
+<button id="gen">生成支付意图</button>
+
+<div id="qr" class="box"></div>
+
+<h3>支付意图</h3>
+<pre id="intentBox" class="box"></pre>
+
+<hr>
+
+<h3>测试支付（直接调用 /api/pay）</h3>
+<p>适用于调试，跳过二维码 + 钱包签名步骤。</p>
+<button id="testPay">测试调用 /api/pay</button>
+
+<pre id="payResult" class="box"></pre>
+
+<script>
+    let currentIntent = null;
+
+    // 生成 QR + Intent
+    document.getElementById("gen").onclick = async () => {
+        const resp = await fetch("/api/intent");
+        const intent = await resp.json();
+        currentIntent = intent;
+
+        document.getElementById("intentBox").innerText = JSON.stringify(intent, null, 2);
+
+        const payUrl = `/index/user-sign.html?intent=${encodeURIComponent(JSON.stringify(intent))}`;
+
+        QRCode.toCanvas(document.getElementById("qr"), payUrl, { width: 240 });
+    };
+
+    // 测试支付 – 用空签名或假签名测试链路
+    document.getElementById("testPay").onclick = async () => {
+        if (!currentIntent) {
+            alert("请先生成支付意图！");
+            return;
+        }
+
+        const fakeSig = "0x" + "11".repeat(65); // 用无效签名测试链路
+
+        const resp = await fetch("/api/pay", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                intent: currentIntent,
+                signature: fakeSig
+            })
+        });
+
+        const data = await resp.json();
+        document.getElementById("payResult").innerText =
+            JSON.stringify(data, null, 2);
+    };
+</script>
+
+</body>
+</html>

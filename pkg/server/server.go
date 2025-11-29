@@ -134,7 +134,7 @@ func (s *Server) Run(addr string) error {
 	// 访问路径里 /index/xxx 映射到本地 ./index 目录
 	r.Static("/index", "./cmd/server/index")
 	r.GET("/", func(c *gin.Context) {
-		c.File("./cmd/server/index/approve.html")
+		c.File("./cmd/server/index/merchant.html")
 	})
 
 	return r.Run(addr)

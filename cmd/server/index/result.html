@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>支付结果</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>支付结果</h2>
+
+<div id="box" class="box"></div>
+
+<script>
+    const s = new URLSearchParams(window.location.search).get("status");
+    document.getElementById("box").innerText =
+        s === "ok" ? "支付成功！🎉" : "支付失败 ❌";
+</script>
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Intent</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>确认支付</h2>
+
+<p>请确认并签名支付意图。</p>
+
+<pre id="intentBox" class="box"></pre>
+
+<button id="signBtn">签名并支付</button>
+
+<script type="module">
+    import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.min.js";
+
+    const INTENT_TYPEHASH = ethers.keccak256(ethers.toUtf8Bytes(
+        "PaymentIntent(address payer,address merchant,address token,uint256 amount,uint256 nonce,uint256 deadline)"
+    ));
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const intent = JSON.parse(urlParams.get("intent"));
+
+    document.getElementById("intentBox").innerText = JSON.stringify(intent, null, 2);
+
+    function hashIntent(intent) {
+        const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
+            ["bytes32","address","address","address","uint256","uint256","uint256"],
+            [
+                INTENT_TYPEHASH,
+                intent.payer,
+                intent.merchant,
+                intent.token,
+                intent.amount,
+                intent.nonce,
+                intent.deadline,
+            ]
+        );
+        return ethers.keccak256(encoded);
+    }
+
+    document.getElementById("signBtn").onclick = async () => {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+
+        const intentHash = hashIntent(intent);
+        const signature = await signer.signMessage(ethers.getBytes(intentHash));
+
+        const resp = await fetch("/api/pay", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ intent, signature })
+        });
+
+        const data = await resp.json();
+        window.location.href = `/index/result.html?status=${data.status || 'ok'}`;
+    };
+</script>
+
+</body>
+</html>
